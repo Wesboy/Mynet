@@ -9,16 +9,20 @@
 #include <sys/socket.h>
 
 #define MAX_CLIENT 10
+#define MAX_BUFF_SIZE 4096
 
 int main(int argc, char *argv[])
 {
 	//1 bind
 	int srv_fd;
-	int clt_fd;
+	int clt_fd = 0;
 	int ret;
+	int count;
 	struct sockaddr_in srv_addr;
 	struct sockaddr_in clt_addr;
 	socklen_t clt_addr_len;
+	
+	char recvbuf[MAX_BUFF_SIZE];
 	
 	
 	//1 create socket
@@ -53,11 +57,20 @@ int main(int argc, char *argv[])
 	while(1)
 	{
 		//3 accept
-		if( (clt_fd = accept(srv_fd, (struct sockaddr*)NULL, NULL)) == -1){
-			printf("accept socket error: %s(errno: %d)",strerror(errno),errno);
-			continue;
+		if(clt_fd == 0)
+		{
+			if( (clt_fd = accept(srv_fd, (struct sockaddr*)NULL, NULL)) == -1){
+				printf("accept socket error: %s(errno: %d)",strerror(errno),errno);
+				continue;
+			}
+			
+			printf("client[%s] connected!!!\r\n", inet_ntoa(clt_addr.sin_addr));
 		}
-		printf("client[%s] connected!!!\r\n", inet_ntoa(clt_addr.sin_addr));
+		
+		count = recv(clt_fd, recvbuf, MAX_BUFF_SIZE, 0);
+		recvbuf[count] = '\0';
+		printf("recv msg buff from client:%s\r\n", recvbuf);
+		//close(clt_fd);
 	}
 	
 	close(srv_fd);

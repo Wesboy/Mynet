@@ -10,20 +10,22 @@
 
 #define MAXLINE 4096
 
-int main(int argc, char** argv)
+int srv_fd;
+int clt_fd;
+int ret;
+struct sockaddr_in srv_addr;
+struct sockaddr_in clt_addr;
+socklen_t clt_addr_len;
+
+void init_connect(char** argv);
+
+void init_connect(char** argv)
 {
-		
-	int srv_fd;
-	int clt_fd;
-	int ret;
-	struct sockaddr_in srv_addr;
-	struct sockaddr_in clt_addr;
-	socklen_t clt_addr_len;
+	clt_addr_len = (socklen_t)sizeof(clt_addr);
 	
-	
-	//1 create socket
-	clt_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if(-1 == clt_fd)
+	//create socket
+	srv_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if(-1 == srv_fd)
 	{
 		printf("socket service faild: %s(errno: %d)\r\n",strerror(errno),errno);
 		exit(0);
@@ -33,23 +35,37 @@ int main(int argc, char** argv)
     srv_addr.sin_family = AF_INET;
     srv_addr.sin_port = htons(6665);
 	
+	
+	
 	if( inet_pton(AF_INET, argv[1], &srv_addr.sin_addr) <= 0){
 		printf("inet_pton error for %s\n",argv[1]);
 		exit(0);
     }
 	
-	//2 connected
-	if(-1 == connect(clt_fd, (struct sockaddr *)&srv_addr, sizeof(srv_addr)))
+	//connected
+	if(-1 == connect(srv_fd, (struct sockaddr *)&srv_addr, sizeof(srv_addr)))
 	{
 		printf("socket connect faild: %s(errno: %d)\r\n",strerror(errno),errno);
 		exit(0);		
 	}
 
-	printf("client[%s]Port[%d] connected!!!\r\n", inet_ntoa(srv_addr.sin_addr), srv_addr.sin_port);
-	
-	while(1)
-	{
+	printf("server[%s]Port[%d] connected!!!\r\n", inet_ntoa(srv_addr.sin_addr), srv_addr.sin_port);
+}
 
+int main(int argc, char** argv)
+{
+		
+	init_connect(argv);
+	char sendbuf[MAXLINE];
+	
+	//while(1)
+	{
+		fgets(sendbuf, MAXLINE-1, stdin);
+		if( -1 == send(srv_fd, sendbuf, strlen(sendbuf), 0))
+		{
+			printf("send msg error\r\n");
+			exit(0);
+		}
 		
 	}
 }
