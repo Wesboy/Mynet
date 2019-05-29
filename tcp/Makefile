@@ -9,7 +9,7 @@ CC = gcc
 
 main : $(DIR_CLT)/client.c $(DIR_SER)/service.c
 	$(CC) $(DIR_CLT)/client.c -o $(DIR_BIN)/client
-	$(CC) $(DIR_SER)/service.c -o $(DIR_BIN)/service
+	$(CC) $(DIR_SER)/service.c -o $(DIR_BIN)/service -lpthread
 
 clean :
 	rm $(DIR_BIN)/*

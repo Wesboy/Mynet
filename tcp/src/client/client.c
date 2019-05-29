@@ -30,12 +30,11 @@ void init_connect(char** argv)
 		printf("socket service faild: %s(errno: %d)\r\n",strerror(errno),errno);
 		exit(0);
 	}
+	printf("socket create success and fd:%d!!!\r\n", srv_fd);
 	
 	memset(&srv_addr, 0, sizeof(srv_addr));
     srv_addr.sin_family = AF_INET;
-    srv_addr.sin_port = htons(6665);
-	
-	
+    srv_addr.sin_port = htons(6664);
 	
 	if( inet_pton(AF_INET, argv[1], &srv_addr.sin_addr) <= 0){
 		printf("inet_pton error for %s\n",argv[1]);
@@ -58,8 +57,9 @@ int main(int argc, char** argv)
 	init_connect(argv);
 	char sendbuf[MAXLINE];
 	
-	//while(1)
+	while(1)
 	{
+		printf("send:");
 		fgets(sendbuf, MAXLINE-1, stdin);
 		if( -1 == send(srv_fd, sendbuf, strlen(sendbuf), 0))
 		{
