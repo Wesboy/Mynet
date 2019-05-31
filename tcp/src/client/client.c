@@ -71,11 +71,10 @@ void str_cli(FILE *fp, int sock_fd)
 	fd_set		rfd;
 	char		buf[MAXLINE];
 	int		n;
+	char	tag[] = "[owen]";
  
 	stdineof = 0;
 	FD_ZERO(&rfd);
-	
-
 
 	FD_SET(sock_fd, &rfd);
 	max_fd = ((fileno(fp) > sock_fd)?fileno(fp): sock_fd) + 1;
@@ -106,12 +105,12 @@ void str_cli(FILE *fp, int sock_fd)
 						close(sock_fd);
 						printf("close server, please reconnect!!!\n");
 					}
-
 					write(fileno(stdout), buf, n);
 				}
 		 
 				if (FD_ISSET(fileno(fp), &rfd))  /* input is readable */
 				{  
+					write(fileno(stdout), tag, sizeof(tag));
 					if ( (n = read(fileno(fp), buf, MAXLINE)) == 0) 
 					{
 						stdineof = 1;

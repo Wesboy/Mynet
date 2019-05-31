@@ -120,8 +120,6 @@ static void client_authentication(struct client *clt, char *buf, int len)
 	int i = 0;
 	char warn_info[] = "Please input name less 10 char!!!\n";
 	
-	printf("client_authentication : %d\n", clt->bAuthentication);
-	
 	if(len > 10 && len <= 0)
 	{
 		send(clt->clt_fd, warn_info, sizeof(warn_info), 0);
