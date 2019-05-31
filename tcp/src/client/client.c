@@ -44,7 +44,7 @@ void init_connect(char** argv)
 	
 	memset(&srv_addr, 0, sizeof(srv_addr));
     srv_addr.sin_family = AF_INET;
-    srv_addr.sin_port = htons(6660);
+    srv_addr.sin_port = htons(6663);
 	
 	if( inet_pton(AF_INET, argv[1], &srv_addr.sin_addr) <= 0){
 		printf("inet_pton error for %s\n",argv[1]);
@@ -75,8 +75,7 @@ void str_cli(FILE *fp, int sock_fd)
 	stdineof = 0;
 	FD_ZERO(&rfd);
 	
-	if (stdineof == 0)
-		FD_SET(fileno(fp), &rfd);
+
 
 	FD_SET(sock_fd, &rfd);
 	max_fd = ((fileno(fp) > sock_fd)?fileno(fp): sock_fd) + 1;
@@ -84,7 +83,8 @@ void str_cli(FILE *fp, int sock_fd)
 	
 	while(1)
 	{
-		
+		if (stdineof == 0)
+			FD_SET(fileno(fp), &rfd);
 		switch(select(max_fd, &rfd, NULL, NULL, NULL))
 		{
 			case 0:
@@ -103,6 +103,8 @@ void str_cli(FILE *fp, int sock_fd)
 							return;		/* normal termination */
 						else
 							printf("str_cli: server terminated prematurely");
+						close(sock_fd);
+						printf("close server, please reconnect!!!\n");
 					}
 
 					write(fileno(stdout), buf, n);
