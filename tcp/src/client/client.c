@@ -7,8 +7,11 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/select.h>
+
 
 #define MAXLINE 4096
+#define CLIENT_NAME "#name"
 
 int srv_fd;
 int clt_fd;
@@ -18,7 +21,14 @@ struct sockaddr_in clt_addr;
 socklen_t clt_addr_len;
 
 void init_connect(char** argv);
+void str_cli(FILE *fp, int sock_fd);
+void data_deal(char *buf);
 
+
+
+/*************************************************************************************************/
+/**********************************网络初始化socket************************************************/
+/*************************************************************************************************/
 void init_connect(char** argv)
 {
 	clt_addr_len = (socklen_t)sizeof(clt_addr);
@@ -34,7 +44,7 @@ void init_connect(char** argv)
 	
 	memset(&srv_addr, 0, sizeof(srv_addr));
     srv_addr.sin_family = AF_INET;
-    srv_addr.sin_port = htons(6664);
+    srv_addr.sin_port = htons(6660);
 	
 	if( inet_pton(AF_INET, argv[1], &srv_addr.sin_addr) <= 0){
 		printf("inet_pton error for %s\n",argv[1]);
@@ -51,21 +61,84 @@ void init_connect(char** argv)
 	printf("server[%s]Port[%d] connected!!!\r\n", inet_ntoa(srv_addr.sin_addr), srv_addr.sin_port);
 }
 
+
+/*************************************************************************************************/
+/**********************************读写处理************************************************/
+/*************************************************************************************************/
+void str_cli(FILE *fp, int sock_fd)
+{
+	int			max_fd, stdineof;
+	fd_set		rfd;
+	char		buf[MAXLINE];
+	int		n;
+ 
+	stdineof = 0;
+	FD_ZERO(&rfd);
+	
+	if (stdineof == 0)
+		FD_SET(fileno(fp), &rfd);
+
+	FD_SET(sock_fd, &rfd);
+	max_fd = ((fileno(fp) > sock_fd)?fileno(fp): sock_fd) + 1;
+		
+	
+	while(1)
+	{
+		
+		switch(select(max_fd, &rfd, NULL, NULL, NULL))
+		{
+			case 0:
+				perror("select timeout!!!\n");
+				break;
+			case -1:
+				perror("select error\n");
+				break;
+			default:
+				if (FD_ISSET(sock_fd, &rfd)) 
+				{	
+					memset(buf, 0, sizeof(buf));
+					if ( (n = read(sock_fd, buf, MAXLINE)) == 0) /* socket is readable */
+					{
+						if (stdineof == 1)
+							return;		/* normal termination */
+						else
+							printf("str_cli: server terminated prematurely");
+					}
+
+					write(fileno(stdout), buf, n);
+				}
+		 
+				if (FD_ISSET(fileno(fp), &rfd))  /* input is readable */
+				{  
+					if ( (n = read(fileno(fp), buf, MAXLINE)) == 0) 
+					{
+						stdineof = 1;
+						//shutdown(sock_fd, SHUT_WR);	/* send FIN */
+						FD_CLR(fileno(fp), &rfd);
+						continue;
+					}
+		 
+					write(sock_fd, buf, n);
+				}
+				break;
+		}
+		
+	}
+}
+
+
+void data_deal(char *buf)
+{
+
+}
+
 int main(int argc, char** argv)
 {
 		
 	init_connect(argv);
 	char sendbuf[MAXLINE];
-	
-	while(1)
-	{
-		printf("send:");
-		fgets(sendbuf, MAXLINE-1, stdin);
-		if( -1 == send(srv_fd, sendbuf, strlen(sendbuf), 0))
-		{
-			printf("send msg error\r\n");
-			exit(0);
-		}
-		
-	}
+
+	printf("send:");
+	str_cli(stdin, srv_fd);
+
 }
