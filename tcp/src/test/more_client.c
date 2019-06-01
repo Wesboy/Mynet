@@ -67,6 +67,7 @@ void str_cli(FILE *fp, int sock_fd)
 	char		buf[MAXLINE];
 	int		n;
 	char	tag[] = "[owen]";
+	char	testbuf[10] = "testMode\n";
  
 	stdineof = 0;
 	FD_ZERO(&rfd);
@@ -79,6 +80,7 @@ void str_cli(FILE *fp, int sock_fd)
 	{
 		if (stdineof == 0)
 			FD_SET(fileno(fp), &rfd);
+		#if 0
 		switch(select(max_fd, &rfd, NULL, NULL, NULL))
 		{
 			case 0:
@@ -118,7 +120,8 @@ void str_cli(FILE *fp, int sock_fd)
 				}
 				break;
 		}
-		
+		#endif
+		write(sock_fd, testbuf, sizeof(testbuf));
 	}
 }
 
