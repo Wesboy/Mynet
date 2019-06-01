@@ -27,7 +27,7 @@ struct client{
 int max_fd;
 static struct client clt[MAX_CLIENT];
 
-static void client_data();
+static void client_data(struct client *part_clt);
 static void wait_accept(int srv_fd);
 static int create_socket();
 static void client_authentication(struct client *clt, char *buf, int len);
@@ -51,7 +51,7 @@ static int create_socket()
 	memset(&srv_addr, 0, sizeof(srv_addr));
     srv_addr.sin_family = AF_INET;
     srv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    srv_addr.sin_port = htons(6660);
+    srv_addr.sin_port = htons(6666);
 	
 	ret = bind(srv_fd, (struct sockaddr *)&srv_addr, (socklen_t)sizeof(srv_addr));
 	if(ret == -1)
@@ -123,7 +123,7 @@ static void wait_accept(int srv_fd)
 			clt[i].bAuthentication = 0; //未认证			
 			clt[i].online = 1;
 			printf("===================================\n");
-			printf("client[%d][ip:%s][Port:%d] connected!!!\n", clt[i].clt_fd, inet_ntoa(clt_addr.sin_addr), ntohs(clt_addr.sin_port));
+			printf("client[%d]->%d [ip:%s][Port:%d] connected!!!\n", i, clt[i].clt_fd, inet_ntoa(clt_addr.sin_addr), ntohs(clt_addr.sin_port));
 			printf("===================================\n");
 
 			//send(clt[i].clt_fd, send_str, sizeof(send_str), 0);
@@ -165,19 +165,19 @@ static void client_authentication(struct client *clt, char *buf, int len)
 }
 
 
-static void client_data(struct client *clt)
+static void client_data(struct client *part_clt)
 {
 	int i;
 	int ret;
 	char recvbuf[MAX_BUFF_SIZE];
 	
-	ret = recv(clt->clt_fd, recvbuf, sizeof(recvbuf), 0);
+	ret = recv(part_clt->clt_fd, recvbuf, sizeof(recvbuf), 0);
 	
 	if(ret <= 0){
-		printf("client[%d] close!!!\r\n", clt->clt_fd);
-		close(clt->clt_fd);
-		clt->online = 1;
-		clt->clt_fd = 0;
+		printf("client[%d] close!!!\r\n", part_clt->clt_fd);
+		close(part_clt->clt_fd);
+		part_clt->online = 1;
+		part_clt->clt_fd = 0;
 	}
 	else
 	{
@@ -185,9 +185,9 @@ static void client_data(struct client *clt)
 		{
 			{
 				recvbuf[ret] = '\0';
-				printf("\033[40;33m%s\033[0m", clt->name);
+				printf("\033[40;33m%s\033[0m", part_clt->name);
 				printf("%s", recvbuf);
-				//write(fileno(stdout), clt->name, strlen(clt->name));
+				//write(fileno(stdout), part_clt->name, strlen(part_clt->name));
 				//write(fileno(stdout), recvbuf, ret);
 			}
 		}

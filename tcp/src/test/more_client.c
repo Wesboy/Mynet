@@ -8,25 +8,28 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/select.h>
-
+#include <pthread.h>
 
 #define MAXLINE 4096
 #define CLIENT_NAME "#name"
 
 
-int init_connect(char** argv);
+
+struct sockaddr_in srv_addr;
+
+
+int init_connect(char* argv);
 void str_cli(FILE *fp, int sock_fd);
 void data_deal(char *buf);
-
 
 
 /*************************************************************************************************/
 /**********************************网络初始化socket************************************************/
 /*************************************************************************************************/
-int init_connect(char** argv)
+int init_connect(char* argv)
 {
 	int srv_fd;
-	struct sockaddr_in srv_addr;
+	
 	struct sockaddr_in clt_addr;
 	socklen_t clt_addr_len;
 	
@@ -40,15 +43,6 @@ int init_connect(char** argv)
 		exit(0);
 	}
 	printf("socket create success and fd:%d!!!\r\n", srv_fd);
-	
-	memset(&srv_addr, 0, sizeof(srv_addr));
-    srv_addr.sin_family = AF_INET;
-    srv_addr.sin_port = htons(6666);
-	
-	if( inet_pton(AF_INET, argv[1], &srv_addr.sin_addr) <= 0){
-		printf("inet_pton error for %s\n",argv[1]);
-		exit(0);
-    }
 	
 	//connected
 	if(-1 == connect(srv_fd, (struct sockaddr *)&srv_addr, sizeof(srv_addr)))
@@ -106,8 +100,6 @@ void str_cli(FILE *fp, int sock_fd)
 						close(sock_fd);
 						printf("close server, please reconnect!!!\n");
 					}
-					buf[n] = '\0';
-					printf("%s", buf);
 					write(fileno(stdout), buf, n);
 				}
 		 
@@ -136,14 +128,88 @@ void data_deal(char *buf)
 
 }
 
-int main(int argc, char** argv)
+void *client_thread(void *arg)
 {
-	int srv_fd;	
+	int srv_fd;
+	char *ip_str = (char *)arg;
 	
-	srv_fd = init_connect(argv);
+	
+	srv_fd = init_connect(ip_str);
 	char sendbuf[MAXLINE];
 
 	printf("send:");
 	str_cli(stdin, srv_fd);
+
+	close(srv_fd);
+
+	return NULL;
+
+}
+
+void client_thread_config(char *ip_str)
+{
+	pthread_t thread_id;
+	int ret;
+
+	ret = pthread_create(&thread_id, NULL, client_thread, (void *)&ip_str);
+	if(0 != ret){
+		printf("client pthrad_create faild: %s(errno: %d)\r\n",strerror(errno),errno);
+		exit(0);
+	}
+	printf("thread create ok-id:%d\r\n", (int)thread_id);
+	//pthread_join(thread_id, NULL);
+}
+
+int main(int argc, char** argv)
+{
+	/**
+			Usage: ./client + ip + client num
+	
+	**/	
+	int srv_fd;
+	unsigned int i;
+	pid_t pid;
+	int thread_num;
+	
+	if(argc < 1)
+	{
+		printf("=======================Usage=========================\r\n");
+		printf("========./main + ip or + thread client number========\r\n");
+		printf("=====================================================\r\n");
+		exit(0);
+	}
+	else if (argc == 3)
+	{
+		thread_num = atoi(argv[2]);
+	}
+		
+	
+	char *ip_str = argv[1];
+		
+	memset(&srv_addr, 0, sizeof(srv_addr));
+    srv_addr.sin_family = AF_INET;
+    srv_addr.sin_port = htons(6666);	
+		
+	if( inet_pton(AF_INET, argv[1], &srv_addr.sin_addr) <= 0){
+		printf("inet_pton faild: %s(errno: %d)\r\n",strerror(errno),errno);
+		exit(0);
+    }
+	
+	if(thread_num > 0 && thread_num < 100)
+	{
+		for(i = 0; i < thread_num; i++)
+		{
+			//创建线程
+			client_thread_config(ip_str);
+		}
+	}
+	
+	srv_fd = init_connect(ip_str);
+	char sendbuf[MAXLINE];
+
+	printf("send:");
+	str_cli(stdin, srv_fd);
+	
+	close(srv_fd);
 
 }
