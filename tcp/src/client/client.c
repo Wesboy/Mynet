@@ -44,7 +44,7 @@ void init_connect(char** argv)
 	
 	memset(&srv_addr, 0, sizeof(srv_addr));
     srv_addr.sin_family = AF_INET;
-    srv_addr.sin_port = htons(6663);
+    srv_addr.sin_port = htons(6660);
 	
 	if( inet_pton(AF_INET, argv[1], &srv_addr.sin_addr) <= 0){
 		printf("inet_pton error for %s\n",argv[1]);
